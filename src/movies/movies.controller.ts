@@ -1,4 +1,11 @@
-import { Controller, Get, Query } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Param,
+  Post,
+  HttpCode,
+  HttpStatus,
+} from '@nestjs/common';
 import { MoviesService } from './movies.service';
 import { Movie } from './movie.entity';
 
@@ -6,24 +13,22 @@ import { Movie } from './movie.entity';
 export class MoviesController {
   constructor(private readonly moviesService: MoviesService) {}
 
-  @Get('populate')
-  async populateMovies() {
-    await this.moviesService.populateMovies();
-    return { message: 'Movies populated successfully' };
+  // Endpoint to populate movies from the TMDb API
+  @Post('populate')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async populateMovies(): Promise<void> {
+    await this.moviesService.populate();
   }
 
+  // Get all movies
   @Get()
-  findAll(): Promise<Movie[]> {
+  async findAll(): Promise<Movie[]> {
     return this.moviesService.findAll();
   }
 
-  @Get('search')
-  findByTitle(@Query('title') title: string): Promise<Movie[]> {
-    return this.moviesService.findByTitle(title);
-  }
-
-  @Get('filter')
-  filterByGenre(@Query('genre') genre: string): Promise<Movie[]> {
-    return this.moviesService.filterByGenre(genre);
+  // Get a movie by ID
+  @Get(':id')
+  async findById(@Param('id') id: number): Promise<Movie> {
+    return this.moviesService.findById(id);
   }
 }

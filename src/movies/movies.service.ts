@@ -2,43 +2,59 @@ import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Movie } from './movie.entity';
+import { ConfigService } from '@nestjs/config';
 import axios from 'axios';
 
 @Injectable()
 export class MoviesService {
+  private readonly TMDB_API_URL = 'https://api.themoviedb.org/3';
+  private readonly TMDB_API_KEY: string;
+
   constructor(
     @InjectRepository(Movie)
     private moviesRepository: Repository<Movie>,
-  ) {}
+    private configService: ConfigService,
+  ) {
+    this.TMDB_API_KEY = this.configService.get<string>('TMDB_API_KEY');
+  }
 
-  async populateMovies() {
-    const apiKey = '1862f94d979ce1e7220a6431119737a9';
-    const url = `https://api.themoviedb.org/3/movie/popular?api_key=${apiKey}`;
+  // Populate movies from TMDb API and store them in the database
+  async populate(): Promise<void> {
+    try {
+      const response = await axios.get(`${this.TMDB_API_URL}/movie/popular`, {
+        params: {
+          api_key: this.TMDB_API_KEY,
+        },
+      });
 
-    const response = await axios.get(url);
-    const movies = response.data.results;
+      const movies = response.data.results;
 
-    for (const movieData of movies) {
-      const movie = new Movie();
-      movie.title = movieData.title;
-      movie.description = movieData.overview;
-      movie.releaseDate = movieData.release_date;
-      movie.genre = movieData.genre_ids.join(', '); // You might want to map genre IDs to actual genre names
-      movie.posterPath = movieData.poster_path;
+      for (const movieData of movies) {
+        const movie = new Movie();
+        movie.title = movieData.title;
+        movie.description = movieData.overview;
+        movie.releaseDate = movieData.release_date;
+        movie.genre = movieData.genre_ids?.join(', ') || '';
+        movie.posterPath = movieData.poster_path;
 
-      await this.moviesRepository.save(movie);
+        await this.moviesRepository.save(movie);
+      }
+    } catch (error) {
+      console.error('Error populating movies:', error);
+      throw new Error('Failed to fetch and populate movies');
     }
   }
 
-  findAll(): Promise<Movie[]> {
-    return this.moviesRepository.find();
+  // Find all movies
+  async findAll(): Promise<Movie[]> {
+    return this.moviesRepository.find({ relations: ['showtimes'] });
   }
 
-  findByTitle(title: string): Promise<Movie[]> {
-    return this.moviesRepository.find({ where: { title } });
-  }
-
-  filterByGenre(genre: string): Promise<Movie[]> {
-    return this.moviesRepository.find({ where: { genre } });
+  // Find a movie by ID
+  async findById(id: number): Promise<Movie> {
+    return this.moviesRepository.findOne({
+      where: { id },
+      relations: ['showtimes'],
+    });
   }
 }

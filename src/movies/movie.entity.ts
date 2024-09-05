@@ -1,4 +1,5 @@
-import { Entity, Column, PrimaryGeneratedColumn } from 'typeorm';
+import { Entity, Column, PrimaryGeneratedColumn, OneToMany } from 'typeorm';
+import { Showtime } from '../showtimes/showtime.entity';
 
 @Entity()
 export class Movie {
@@ -19,4 +20,7 @@ export class Movie {
 
   @Column()
   posterPath: string;
+
+  @OneToMany(() => Showtime, (showtime) => showtime.movie)
+  showtimes: Showtime[];
 }

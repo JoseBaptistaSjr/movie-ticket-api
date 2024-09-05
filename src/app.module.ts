@@ -2,7 +2,11 @@ import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { MoviesModule } from './movies/movies.module';
 import { Movie } from './movies/movie.entity';
-import { ConfigModule, ConfigService } from '@nestjs/config';
+import { ConfigModule } from '@nestjs/config';
+import { Showtime } from './showtimes/showtime.entity';
+import { ShowtimesModule } from './showtimes/showtimes.module';
+import { Ticket } from './tickets/ticket.entity';
+import { TicketsModule } from './tickets/tickets.module';
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -15,10 +19,12 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
       username: process.env.DB_USER,
       password: process.env.DB_PASSWORD,
       database: process.env.DB_NAME,
-      entities: [Movie],
+      entities: [Movie, Showtime, Ticket],
       synchronize: true,
     }),
     MoviesModule,
+    ShowtimesModule,
+    TicketsModule,
   ],
 })
 export class AppModule {}
